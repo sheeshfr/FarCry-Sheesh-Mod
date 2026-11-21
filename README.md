@@ -31,18 +31,19 @@
 
 ---
 
-## How to Use
+## How to Install
 
-1. Grab **`FarCry-Sheesh-Mod-v1.0-ModDB.zip`** (or **`FC Sheesh Mod v1.0.exe`**) from [**Releases**](https://github.com/sheeshfr/FarCry-Sheesh-Mod/releases/latest).
-2. Run **`FC Sheesh Mod v1.0.exe`** and point it to where you have Far Cry installed.
-3. Click **Install** and launch the game!
-4. If you ever want to remove the mod, run **`FC Sheesh Mod v1.0.exe`** again (or use the Uninstaller shortcut) to restore your game back to normal.
+1. Download **`FarCry-Sheesh-Mod-v1.0-GitHub.zip`** from [**Releases**](https://github.com/sheeshfr/FarCry-Sheesh-Mod/releases/latest) (contains everything you need).
+2. Extract the `.exe` from the zip.
+3. Launch it, point it at your Far Cry folder, and click **Install** — done!
+
+To uninstall later, run the `.exe` again anytime to restore your game back to vanilla.
 
 ---
 
 ## Download
 
-Grab the latest **`FarCry-Sheesh-Mod-v1.0-ModDB.zip`** from [**Releases**](https://github.com/sheeshfr/FarCry-Sheesh-Mod/releases/latest).
+Grab **`FarCry-Sheesh-Mod-v1.0-GitHub.zip`** from [**Releases**](https://github.com/sheeshfr/FarCry-Sheesh-Mod/releases/latest).
 
 ---
 
