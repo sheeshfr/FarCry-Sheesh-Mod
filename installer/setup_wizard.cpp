@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 #include "deflate_min.h"
 
@@ -382,6 +383,261 @@ static bool SurgicalUpdateZipSingleEntryW(const std::wstring& zipPath, const std
               writeChunk(eocd_buf, 22);
     CloseHandle(h);
     return ok;
+}
+// ============================================================================
+// Runtime Story & Dialogue Voice Booster (+25% gain + soft-knee limiter)
+// Generates FCData\zz_sheesh_voices.pak locally from english.pak without
+// modifying or redistributing Ubisoft's original english.pak archive.
+// ============================================================================
+static bool ShouldBoostDialogueVoice(const std::string& lowPath) {
+    if (lowPath.size() < 4 || lowPath.compare(lowPath.size() - 4, 4, ".wav") != 0) return false;
+    static const char* kPrefixes[] = {
+        "languages/missiontalk/",
+        "languages/voicepacks/krieger/",
+        "languages/voicepacks/mission_generic/",
+        "languages/voicepacks/val/affirmative_",
+        "languages/voicepacks/val/receive_"
+    };
+    for (const char* pfx : kPrefixes) {
+        size_t plen = strlen(pfx);
+        if (lowPath.size() >= plen && lowPath.compare(0, plen, pfx) == 0) return true;
+    }
+    return false;
+}
+
+static bool ApplyDialogueBoostInPlace(std::vector<uint8_t>& wav, const std::vector<int16_t>& lut) {
+    if (wav.size() < 44) return false;
+    if (memcmp(wav.data(), "RIFF", 4) != 0 || memcmp(wav.data() + 8, "WAVE", 4) != 0) return false;
+
+    uint16_t fmtCode = 0;
+    uint16_t bitsPerSample = 0;
+    bool boostedAny = false;
+    size_t pos = 12;
+
+    while (pos + 8 <= wav.size()) {
+        const uint8_t* cid = wav.data() + pos;
+        uint32_t csz = *(const uint32_t*)(wav.data() + pos + 4);
+        size_t dataStart = pos + 8;
+        size_t dataEnd = std::min<size_t>(wav.size(), dataStart + (size_t)csz);
+        size_t payloadLen = (dataEnd >= dataStart) ? (dataEnd - dataStart) : 0;
+
+        if (memcmp(cid, "fmt ", 4) == 0 && payloadLen >= 16) {
+            fmtCode = *(const uint16_t*)(wav.data() + dataStart);
+            bitsPerSample = *(const uint16_t*)(wav.data() + dataStart + 14);
+        } else if (memcmp(cid, "data", 4) == 0 && fmtCode == 1 && bitsPerSample == 16 && payloadLen >= 2) {
+            size_t sampleCount = payloadLen / 2;
+            uint8_t* samples = wav.data() + dataStart;
+            for (size_t i = 0; i < sampleCount; ++i) {
+                uint16_t u = (uint16_t)samples[i * 2] | ((uint16_t)samples[i * 2 + 1] << 8);
+                int16_t outS = lut[u];
+                samples[i * 2]     = (uint8_t)(outS & 0xFF);
+                samples[i * 2 + 1] = (uint8_t)((outS >> 8) & 0xFF);
+            }
+            boostedAny = true;
+        }
+        size_t adv = (size_t)csz + (csz & 1);
+        if (dataStart + adv <= pos) break;
+        pos = dataStart + adv;
+    }
+    return boostedAny;
+}
+
+static bool WriteHandleAll(HANDLE h, const void* ptr, size_t sz, uint64_t& curOffset) {
+    const uint8_t* b = (const uint8_t*)ptr;
+    size_t tot = 0;
+    while (tot < sz) {
+        DWORD ch = (DWORD)std::min<size_t>(sz - tot, 1 << 24);
+        DWORD wr = 0;
+        if (!WriteFile(h, b + tot, ch, &wr, NULL) || wr == 0) return false;
+        tot += wr;
+    }
+    curOffset += sz;
+    return true;
+}
+
+static int GenerateBoostedVoicesPakW(const std::wstring& engPakPath, const std::wstring& outPakPath) {
+    HANDLE hEng = CreateFileW(engPakPath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hEng == INVALID_HANDLE_VALUE) return 0;
+
+    LARGE_INTEGER fsz;
+    if (!GetFileSizeEx(hEng, &fsz) || fsz.QuadPart < 22) {
+        CloseHandle(hEng);
+        return 0;
+    }
+    uint64_t fileSize = (uint64_t)fsz.QuadPart;
+    size_t tailLen = (size_t)std::min<uint64_t>(fileSize, 65557);
+    std::vector<uint8_t> tail(tailLen);
+    if (!ReadSliceAt(hEng, fileSize - tailLen, tail.data(), tailLen)) {
+        CloseHandle(hEng);
+        return 0;
+    }
+
+    int64_t eocdPos = -1;
+    for (int64_t i = (int64_t)tailLen - 22; i >= 0; --i) {
+        size_t idx = (size_t)i;
+        if (tail[idx] == 'P' && tail[idx+1] == 'K' && tail[idx+2] == 5 && tail[idx+3] == 6) {
+            eocdPos = i;
+            break;
+        }
+    }
+    if (eocdPos < 0) { CloseHandle(hEng); return 0; }
+
+    uint16_t cdCount = *(const uint16_t*)(tail.data() + eocdPos + 10);
+    uint32_t cdSize  = *(const uint32_t*)(tail.data() + eocdPos + 12);
+    uint32_t cdOff   = *(const uint32_t*)(tail.data() + eocdPos + 16);
+    if ((uint64_t)cdOff + (uint64_t)cdSize > fileSize) { CloseHandle(hEng); return 0; }
+
+    std::vector<uint8_t> cd(cdSize);
+    if (!ReadSliceAt(hEng, cdOff, cd.data(), cdSize)) {
+        CloseHandle(hEng);
+        return 0;
+    }
+
+    std::vector<int16_t> lut(65536, 0);
+    const double kGain = 1.25;
+    const double kKnee = 0.90;
+    const double kHeadroom = 0.095;
+    for (int i = 0; i < 65536; ++i) {
+        int s = (i < 32768) ? i : (i - 65536);
+        double x = (s / 32768.0) * kGain;
+        double ax = (x < 0.0) ? -x : x;
+        double y;
+        if (ax <= kKnee) {
+            y = x;
+        } else {
+            double sign = (x >= 0.0) ? 1.0 : -1.0;
+            double excess = ax - kKnee;
+            y = sign * (kKnee + kHeadroom * std::tanh(excess / kHeadroom));
+        }
+        int outS = (int)std::lround(y * 32768.0);
+        if (outS > 32767) outS = 32767;
+        else if (outS < -32767) outS = -32767;
+        lut[i] = (int16_t)outS;
+    }
+
+    EnsureParentDirsW(outPakPath);
+    std::wstring tmpPath = outPakPath + L".tmp";
+    HANDLE hOut = CreateFileW(tmpPath.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hOut == INVALID_HANDLE_VALUE) {
+        CloseHandle(hEng);
+        return 0;
+    }
+
+    std::vector<uint8_t> outCd;
+    outCd.reserve(256 * 1024);
+    uint64_t writeOffset = 0;
+    int boostedCount = 0;
+    bool writeFailed = false;
+
+    size_t p = 0;
+    for (uint16_t i = 0; i < cdCount && p + 46 <= cd.size(); ++i) {
+        if (memcmp(cd.data() + p, "PK\x01\x02", 4) != 0) break;
+        uint16_t method  = *(const uint16_t*)(cd.data() + p + 10);
+        uint16_t modTime = *(const uint16_t*)(cd.data() + p + 12);
+        uint16_t modDate = *(const uint16_t*)(cd.data() + p + 14);
+        uint32_t compSz  = *(const uint32_t*)(cd.data() + p + 20);
+        uint32_t uncompSz= *(const uint32_t*)(cd.data() + p + 24);
+        uint16_t fnLen   = *(const uint16_t*)(cd.data() + p + 28);
+        uint16_t exLen   = *(const uint16_t*)(cd.data() + p + 30);
+        uint16_t cmLen   = *(const uint16_t*)(cd.data() + p + 32);
+        uint32_t extAttr = *(const uint32_t*)(cd.data() + p + 38);
+        uint32_t lhOff   = *(const uint32_t*)(cd.data() + p + 42);
+        if (p + 46 + fnLen + exLen + cmLen > cd.size()) break;
+
+        std::string origName((const char*)(cd.data() + p + 46), fnLen);
+        std::string lowName = origName;
+        for (auto& c : lowName) { if (c == '\\') c = '/'; c = (char)tolower((unsigned char)c); }
+
+        if (ShouldBoostDialogueVoice(lowName)) {
+            uint8_t lh[30];
+            if (ReadSliceAt(hEng, lhOff, lh, 30) && memcmp(lh, "PK\x03\x04", 4) == 0) {
+                uint16_t lFnLen = *(const uint16_t*)(lh + 26);
+                uint16_t lExLen = *(const uint16_t*)(lh + 28);
+                uint64_t dataOff = (uint64_t)lhOff + 30 + lFnLen + lExLen;
+                std::vector<uint8_t> compBuf(compSz);
+                if (ReadSliceAt(hEng, dataOff, compBuf.data(), compSz)) {
+                    std::vector<uint8_t> wavData;
+                    bool decOk = false;
+                    if (method == 0) {
+                        wavData = std::move(compBuf);
+                        decOk = true;
+                    } else if (method == 8) {
+                        decOk = inflate_raw(compBuf.data(), compBuf.size(), wavData, uncompSz);
+                    }
+                    if (decOk && ApplyDialogueBoostInPlace(wavData, lut)) {
+                        uint32_t newCrc = calc_crc32(wavData.data(), wavData.size());
+                        uint32_t newSz  = (uint32_t)wavData.size();
+                        uint32_t entryLhOff = (uint32_t)writeOffset;
+
+                        std::string outName = origName;
+                        for (auto& c : outName) { if (c == '\\') c = '/'; }
+
+                        uint8_t outLh[30] = {0};
+                        memcpy(outLh, "PK\x03\x04", 4);
+                        *(uint16_t*)(outLh + 4)  = 20;
+                        *(uint16_t*)(outLh + 10) = modTime;
+                        *(uint16_t*)(outLh + 12) = modDate;
+                        *(uint32_t*)(outLh + 14) = newCrc;
+                        *(uint32_t*)(outLh + 18) = newSz;
+                        *(uint32_t*)(outLh + 22) = newSz;
+                        *(uint16_t*)(outLh + 26) = (uint16_t)outName.size();
+
+                        if (!WriteHandleAll(hOut, outLh, 30, writeOffset) ||
+                            !WriteHandleAll(hOut, outName.data(), outName.size(), writeOffset) ||
+                            !WriteHandleAll(hOut, wavData.data(), wavData.size(), writeOffset)) {
+                            writeFailed = true;
+                            break;
+                        }
+
+                        uint8_t outCdRec[46] = {0};
+                        memcpy(outCdRec, "PK\x01\x02", 4);
+                        *(uint16_t*)(outCdRec + 4)  = 20;
+                        *(uint16_t*)(outCdRec + 6)  = 20;
+                        *(uint16_t*)(outCdRec + 12) = modTime;
+                        *(uint16_t*)(outCdRec + 14) = modDate;
+                        *(uint32_t*)(outCdRec + 16) = newCrc;
+                        *(uint32_t*)(outCdRec + 20) = newSz;
+                        *(uint32_t*)(outCdRec + 24) = newSz;
+                        *(uint16_t*)(outCdRec + 28) = (uint16_t)outName.size();
+                        *(uint32_t*)(outCdRec + 38) = extAttr;
+                        *(uint32_t*)(outCdRec + 42) = entryLhOff;
+                        outCd.insert(outCd.end(), outCdRec, outCdRec + 46);
+                        outCd.insert(outCd.end(), (const uint8_t*)outName.data(), (const uint8_t*)outName.data() + outName.size());
+                        boostedCount++;
+                    }
+                }
+            }
+        }
+        p += 46 + fnLen + exLen + cmLen;
+    }
+
+    if (!writeFailed && boostedCount > 0) {
+        uint32_t cdStartOff = (uint32_t)writeOffset;
+        uint32_t outCdSz    = (uint32_t)outCd.size();
+        uint8_t outEocd[22] = {0};
+        memcpy(outEocd, "PK\x05\x06", 4);
+        *(uint16_t*)(outEocd + 8)  = (uint16_t)boostedCount;
+        *(uint16_t*)(outEocd + 10) = (uint16_t)boostedCount;
+        *(uint32_t*)(outEocd + 12) = outCdSz;
+        *(uint32_t*)(outEocd + 16) = cdStartOff;
+        if (!WriteHandleAll(hOut, outCd.data(), outCd.size(), writeOffset) ||
+            !WriteHandleAll(hOut, outEocd, 22, writeOffset)) {
+            writeFailed = true;
+        }
+    }
+
+    CloseHandle(hOut);
+    CloseHandle(hEng);
+
+    if (writeFailed || boostedCount == 0) {
+        DeleteFileW(tmpPath.c_str());
+        return 0;
+    }
+    if (!MoveFileExW(tmpPath.c_str(), outPakPath.c_str(), MOVEFILE_REPLACE_EXISTING)) {
+        DeleteFileW(tmpPath.c_str());
+        return 0;
+    }
+    return boostedCount;
 }
 
 // ============================================================================
@@ -962,8 +1218,10 @@ static void ConfigureSheeshModSystemCfg(const std::wstring& cfgPath, bool setNat
     SetCfgKeyValue(text, "s_MusicStreamedData", "1");
     SetCfgKeyValue(text, "s_SpeakerConfig", "5");
     SetCfgKeyValue(text, "s_SampleRate", "44100");
+    SetCfgKeyValue(text, "s_MasterVolume", "1.000000");
     SetCfgKeyValue(text, "s_SFXVolume", "1");
     SetCfgKeyValue(text, "s_MusicVolume", "0.6");
+    SetCfgKeyValue(text, "cl_infinite_ammo", "0");
     SetCfgKeyValue(text, "s_CompatibleMode", "0");
     SetCfgKeyValue(text, "s_DopplerEnable", "0");
     // Enforce detail & bump textures so rock/terrain/overworld surfaces never appear smooth/untextured
@@ -1488,6 +1746,19 @@ static DWORD WINAPI InstallThreadProc(LPVOID) {
         }
     }
 
+    SetProgress(89, L"Generating dialogue audio mix (FCData\\zz_sheesh_voices.pak)...");
+    {
+        std::wstring engPak = JoinPath(g_targetDir, L"FCData\\Localized\\english.pak");
+        std::wstring outVoicePak = JoinPath(g_targetDir, L"FCData\\zz_sheesh_voices.pak");
+        int nVoices = GenerateBoostedVoicesPakW(engPak, outVoicePak);
+        if (nVoices > 0) {
+            installedFilesList.push_back("FCData\\zz_sheesh_voices.pak");
+            AppendLogLine(L"[VOICES] Generated FCData\\zz_sheesh_voices.pak (" + std::to_wstring(nVoices) + L" dialogue clips boosted +25%).");
+        } else {
+            AppendLogLine(L"[WARN] Skipped FCData\\zz_sheesh_voices.pak (english.pak not found or unreadable).");
+        }
+    }
+
     // Register Windows AppCompatFlags (HIGHDPIAWARE) to prevent legacy .NET/DirectPlay prompts & DPI scaling issues,
     // and grant folder modify permissions for Program Files installations
     SetProgress(90, L"Configuring Windows compatibility & folder permissions...");
@@ -1521,7 +1792,7 @@ static DWORD WINAPI InstallThreadProc(LPVOID) {
         HKEY hUnKey = NULL;
         if (RegCreateKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\FarCrySheeshMod",
                             0, NULL, 0, KEY_WRITE, NULL, &hUnKey, NULL) == ERROR_SUCCESS) {
-            std::wstring dispName = L"Far Cry \u2014 Sheesh Mod v1.0";
+            std::wstring dispName = L"Far Cry \u2014 Sheesh! Mod v1.1";
             std::wstring uninstCmd = L"\"" + uninstExe + L"\" /uninstall";
             std::wstring dispIcon = uninstExe;
             RegSetValueExW(hUnKey, L"DisplayName", 0, REG_SZ, (const BYTE*)dispName.c_str(), (DWORD)((dispName.size() + 1) * sizeof(wchar_t)));
@@ -1532,7 +1803,7 @@ static DWORD WINAPI InstallThreadProc(LPVOID) {
             RegSetValueExW(hUnKey, L"PortableMode", 0, REG_DWORD, (const BYTE*)&portableFlag, sizeof(DWORD));
             RegSetValueExW(hUnKey, L"DisplayIcon", 0, REG_SZ, (const BYTE*)dispIcon.c_str(), (DWORD)((dispIcon.size() + 1) * sizeof(wchar_t)));
             RegSetValueExW(hUnKey, L"Publisher", 0, REG_SZ, (const BYTE*)L"SheeshFr", (DWORD)(9 * sizeof(wchar_t)));
-            RegSetValueExW(hUnKey, L"DisplayVersion", 0, REG_SZ, (const BYTE*)L"1.0", (DWORD)(4 * sizeof(wchar_t)));
+            RegSetValueExW(hUnKey, L"DisplayVersion", 0, REG_SZ, (const BYTE*)L"1.1", (DWORD)(4 * sizeof(wchar_t)));
             DWORD noMod = 1;
             RegSetValueExW(hUnKey, L"NoModify", 0, REG_DWORD, (const BYTE*)&noMod, sizeof(DWORD));
             RegSetValueExW(hUnKey, L"NoRepair", 0, REG_DWORD, (const BYTE*)&noMod, sizeof(DWORD));
@@ -1546,7 +1817,7 @@ static DWORD WINAPI InstallThreadProc(LPVOID) {
         if (SHGetFolderPathW(NULL, CSIDL_DESKTOPDIRECTORY, NULL, 0, desktopDir) == S_OK) {
             std::wstring lnkPath = JoinPath(desktopDir, L"Far Cry.lnk");
             std::wstring fcExe   = JoinPath(g_targetDir, L"Bin32\\FarCry.exe");
-            if (CreateShellShortcutW(lnkPath, fcExe, L"-DEVMODE", g_targetDir, fcExe, L"Launch Far Cry (Sheesh Mod)")) {
+            if (CreateShellShortcutW(lnkPath, fcExe, L"-DEVMODE", g_targetDir, fcExe, L"Launch Far Cry (Sheesh! Mod)")) {
                 AppendLogLine(L"[OK] Created Desktop shortcut: Far Cry.lnk");
             }
         }
@@ -1554,7 +1825,7 @@ static DWORD WINAPI InstallThreadProc(LPVOID) {
 
     SetProgress(100, L"Installation complete!");
     AppendLogLine(L"======================================================================");
-    AppendLogLine(L"SUCCESS: Sheesh Mod v1.0 installed cleanly and verified!");
+    AppendLogLine(L"SUCCESS: Sheesh! Mod v1.1 installed cleanly and verified!");
     AppendLogLine(L"======================================================================");
     g_installSuccess = true;
     PostMessageW(g_hWndMain, WM_APP_DONE, 1, 0);
@@ -1653,6 +1924,7 @@ static DWORD WINAPI UninstallThreadProc(LPVOID) {
     DeleteFileW(JoinPath(g_targetDir, L"log.txt").c_str());
     DeleteFileW(JoinPath(g_targetDir, L"error.log").c_str());
     DeleteFileW(JoinPath(g_targetDir, L"Editor.log").c_str());
+    DeleteFileW(JoinPath(g_targetDir, L"FCData\\zz_sheesh_voices.pak").c_str());
 
     // 3. Restore backed up loose files (Bin32 DLLs/EXEs, Scripts.pak, ccgf_cache.pak, DevMode.lua, system.cfg, etc.)
     std::vector<uint8_t> bakRaw;
@@ -1820,7 +2092,7 @@ static void ValidateSelectedPath() {
         bool hasBackup = DirExistsW(JoinPath(g_targetDir, L"_SheeshMod_Backup"));
         if (g_isUninstallMode) {
             if (hasBackup) {
-                SetWindowTextW(g_hLblStatus, L"\x2714 Valid Sheesh Mod installation detected (_SheeshMod_Backup present). Ready to uninstall.");
+                SetWindowTextW(g_hLblStatus, L"\x2714 Valid Sheesh! Mod installation detected (_SheeshMod_Backup present). Ready to uninstall.");
                 EnableWindow(g_hBtnNext, TRUE);
             } else {
                 SetWindowTextW(g_hLblStatus, L"\x26A0 No _SheeshMod_Backup found in this directory. Run Install first to initialize backups.");
@@ -1829,7 +2101,7 @@ static void ValidateSelectedPath() {
             ShowWindow(g_hBtnSwitchUninstall, SW_HIDE);
         } else {
             if (hasBackup) {
-                SetWindowTextW(g_hLblStatus, L"\x2714 Existing Sheesh Mod installation detected. Ready to update/repair (or click Uninstall below).");
+                SetWindowTextW(g_hLblStatus, L"\x2714 Existing Sheesh! Mod installation detected. Ready to update/repair (or click Uninstall below).");
                 ShowWindow(g_hBtnSwitchUninstall, SW_SHOW);
             } else {
                 SetWindowTextW(g_hLblStatus, L"\x2714 Valid Far Cry installation verified (Bin32\\FarCry.exe + FCData). Ready to install!");
@@ -1869,23 +2141,23 @@ static void ShowWizardPage(int page) {
 
     if (page == 0) {
         if (g_isUninstallMode) {
-            SetWindowTextW(g_hHeaderTitle, L"Far Cry \u2014 Sheesh Mod Uninstaller");
+            SetWindowTextW(g_hHeaderTitle, L"Far Cry \u2014 Sheesh! Mod Uninstaller");
             SetWindowTextW(g_hHeaderSub, L"Restore your Far Cry installation to its original untouched Vanilla state.");
             std::wstring udPreview = g_targetDir.empty() ? L"<Selected Install Folder>\\User Data" : ResolveSelectedPortableUserDataDir(g_targetDir);
             std::wstring welcomeUninst =
-                L"Welcome to the Far Cry \u2014 Sheesh Mod Uninstallation Wizard.\r\n\r\n"
+                L"Welcome to the Far Cry \u2014 Sheesh! Mod Uninstallation Wizard.\r\n\r\n"
                 L"This wizard will:\r\n"
-                L"  \u2022 Remove all custom Sheesh Mod assets, scripts, and DXVK files\r\n"
+                L"  \u2022 Remove all custom Sheesh! Mod assets, scripts, and DXVK files\r\n"
                 L"  \u2022 Restore your original untouched Bin32 binaries and FCData .pak archives\r\n"
                 L"  \u2022 Keep or delete portable saves & configs inside your selected install folder:\r\n"
                 L"    " + udPreview + L"\r\n\r\n"
                 L"Click Next to verify the installation directory and begin.";
             SetWindowTextW(g_hWelcomeText, welcomeUninst.c_str());
         } else {
-            SetWindowTextW(g_hHeaderTitle, L"Far Cry \u2014 Sheesh Mod v1.0");
+            SetWindowTextW(g_hHeaderTitle, L"Far Cry \u2014 Sheesh! Mod v1.1");
             SetWindowTextW(g_hHeaderSub, L"Clean-Room Delta Patcher & Overhaul Installer for Far Cry");
             SetWindowTextW(g_hWelcomeText,
-                L"Welcome to the Sheesh Mod v1.0 Setup Wizard!\r\n\r\n"
+                L"Welcome to the Sheesh! Mod v1.1 Setup Wizard!\r\n\r\n"
                 L"Compatible with Steam, GOG, Epic Games / Ubisoft Connect, and Retail installations.\r\n\r\n"
                 L"How this installer works:\r\n"
                 L"  \u2022 Automatically locates your installed copy of Far Cry across all launchers\r\n"
@@ -1923,7 +2195,7 @@ static void ShowWizardPage(int page) {
         ValidateSelectedPath();
     }
     else if (page == 2) {
-        SetWindowTextW(g_hHeaderTitle, g_isUninstallMode ? L"Uninstalling Sheesh Mod..." : L"Installing Sheesh Mod v1.0...");
+        SetWindowTextW(g_hHeaderTitle, g_isUninstallMode ? L"Uninstalling Sheesh! Mod..." : L"Installing Sheesh! Mod v1.1...");
         SetWindowTextW(g_hHeaderSub, L"Please wait while files are backed up and patched.");
         ShowWindow(g_hProgressBar, SW_SHOW);
         ShowWindow(g_hLblProgressStep, SW_SHOW);
@@ -1946,15 +2218,15 @@ static void ShowWizardPage(int page) {
                 SetWindowTextW(g_hHeaderTitle, L"Uninstallation Complete");
                 SetWindowTextW(g_hHeaderSub, L"Far Cry has been restored to its untouched Vanilla state.");
                 SetWindowTextW(g_hFinishText,
-                    L"Sheesh Mod has been completely removed.\r\n\r\n"
+                    L"Sheesh! Mod has been completely removed.\r\n\r\n"
                     L"All original Vanilla binaries, scripts, and .pak archives have been restored from '_SheeshMod_Backup\\'.\r\n\r\n"
                     L"Click Finish to exit the wizard.");
                 ShowWindow(g_hChkOpenFolder, SW_SHOW);
             } else {
                 SetWindowTextW(g_hHeaderTitle, L"Installation Complete!");
-                SetWindowTextW(g_hHeaderSub, L"Far Cry \u2014 Sheesh Mod v1.0 is ready to play.");
+                SetWindowTextW(g_hHeaderSub, L"Far Cry \u2014 Sheesh! Mod v1.1 is ready to play.");
                 std::wstring msg =
-                    L"Sheesh Mod v1.0 has been successfully installed into:\r\n"
+                    L"Sheesh! Mod v1.1 has been successfully installed into:\r\n"
                     L"  " + g_targetDir + L"\r\n\r\n"
                     L"What was configured:\r\n"
                     L"  \u2022 Original Vanilla files backed up safely in '_SheeshMod_Backup\\'\r\n"
@@ -2050,7 +2322,7 @@ static LRESULT CALLBACK WizardWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
         SendMessageW(g_hChkDesktopLnk, WM_SETFONT, (WPARAM)g_hFontBody, TRUE);
         SendMessageW(g_hChkDesktopLnk, BM_SETCHECK, BST_CHECKED, 0);
 
-        g_hBtnSwitchUninstall = CreateWindowExW(0, L"BUTTON", L"Uninstall Sheesh Mod from Folder...",
+        g_hBtnSwitchUninstall = CreateWindowExW(0, L"BUTTON", L"Uninstall Sheesh! Mod from Folder...",
                                                 WS_CHILD | BS_PUSHBUTTON, 382, 330, 230, 28, hWnd, (HMENU)IDC_BTN_UNINST_NOW, g_hInst, NULL);
         SendMessageW(g_hBtnSwitchUninstall, WM_SETFONT, (WPARAM)g_hFontBody, TRUE);
 
@@ -2329,7 +2601,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
         }
         std::wstring lastModLoc;
         if (ReadRegStringW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\FarCrySheeshMod", L"InstallLocation", lastModLoc)) {
-            AddCandidate(g_detectedInstalls, lastModLoc, L"Installed Sheesh Mod", 0);
+            AddCandidate(g_detectedInstalls, lastModLoc, L"Installed Sheesh! Mod", 0);
         }
     }
 
@@ -2373,7 +2645,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
     g_hWndMain = CreateWindowExW(
         WS_EX_APPWINDOW,
         wc.lpszClassName,
-        g_isUninstallMode ? L"Far Cry \u2014 Sheesh Mod Uninstaller" : L"Far Cry \u2014 Sheesh Mod v1.0",
+        g_isUninstallMode ? L"Far Cry \u2014 Sheesh! Mod Uninstaller" : L"Far Cry \u2014 Sheesh! Mod v1.1",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE,
         sx, sy, winW, winH,
         NULL, NULL, hInstance, NULL);

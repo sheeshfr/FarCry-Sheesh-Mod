@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "entries": [
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -110,8 +110,8 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "FCData\\Scripts.pak",
       "delta_file": "deltas/0016_FCData_Scripts.pak.delta",
-      "size": 1348978,
-      "crc32": 1227609931
+      "size": 1360009,
+      "crc32": 3699623238
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -124,22 +124,22 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "FCData\\zz_patch.pak",
       "delta_file": "deltas/0018_FCData_zz_patch.pak.delta",
-      "size": 103303523,
-      "crc32": 1920498250
+      "size": 88907237,
+      "crc32": 2287983076
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "DevMode.lua",
       "delta_file": "deltas/0019_DevMode.lua.delta",
-      "size": 9481,
-      "crc32": 3860015848
+      "size": 9524,
+      "crc32": 2003396863
     },
     {
       "op": "COPY_ASSET",
       "target": "system.cfg",
       "asset_file": "assets/system.cfg",
       "size": 4813,
-      "crc32": 2553426727
+      "crc32": 4278040062
     },
     {
       "op": "COPY_ASSET",
@@ -159,8 +159,8 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Bin32\\CryGame.dll",
       "delta_file": "deltas/0021_Bin32_CryGame.dll.delta",
-      "size": 2272256,
-      "crc32": 373451128
+      "size": 2296320,
+      "crc32": 699987507
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -195,7 +195,7 @@
       "target": "Bin32\\crysound.dll",
       "delta_file": "deltas/0026_Bin32_crysound.dll.delta",
       "size": 323584,
-      "crc32": 3934940473
+      "crc32": 2976508716
     },
     {
       "op": "COPY_ASSET",
@@ -1420,8 +1420,8 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\Default\\ClientStuff.lua",
       "delta_file": "deltas/0125_Scripts_Default_ClientStuff.lua.delta",
-      "size": 17380,
-      "crc32": 1612612385
+      "size": 17457,
+      "crc32": 1231468484
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -1644,8 +1644,8 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\Default\\Entities\\PLAYER\\BasicPlayer.lua",
       "delta_file": "deltas/0157_Scripts_Default_Entities_PLAYER_BasicPlayer.lua.delta",
-      "size": 147271,
-      "crc32": 3381894862
+      "size": 147321,
+      "crc32": 1109091928
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -1735,8 +1735,8 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\Default\\Entities\\Weapons\\BasicWeapon.lua",
       "delta_file": "deltas/0170_Scripts_Default_Entities_Weapons_BasicWeapon.lua.delta",
-      "size": 87427,
-      "crc32": 1168484063
+      "size": 87684,
+      "crc32": 2911871164
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -1791,8 +1791,8 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\Default\\Entities\\Weapons\\Machete.lua",
       "delta_file": "deltas/0178_Scripts_Default_Entities_Weapons_Machete.lua.delta",
-      "size": 1484,
-      "crc32": 4121612935
+      "size": 1485,
+      "crc32": 2163077384
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -1875,8 +1875,8 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\Default\\Entities\\Weapons\\WeaponOffsets.lua",
       "delta_file": "deltas/0190_Scripts_Default_Entities_Weapons_WeaponOffsets.lua.delta",
-      "size": 5153,
-      "crc32": 1897100725
+      "size": 5866,
+      "crc32": 1853144448
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -1924,15 +1924,15 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\Default\\Hud\\InventoryGrid.lua",
       "delta_file": "deltas/0197_Scripts_Default_Hud_InventoryGrid.lua.delta",
-      "size": 284255,
-      "crc32": 1635372328
+      "size": 282086,
+      "crc32": 1261408714
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\Default\\Hud\\InventoryItemsSheet.lua",
       "delta_file": "deltas/0198_Scripts_Default_Hud_InventoryItemsSheet.lua.delta",
-      "size": 18012,
-      "crc32": 2991717012
+      "size": 17983,
+      "crc32": 3102095080
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -1960,7 +1960,7 @@
       "target": "Scripts\\GUI\\HudCommon.lua",
       "delta_file": "deltas/0202_Scripts_GUI_HudCommon.lua.delta",
       "size": 106366,
-      "crc32": 1620263326
+      "crc32": 2990929757
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -1973,8 +1973,8 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\MenuScreens\\Campaign.lua",
       "delta_file": "deltas/0204_Scripts_MenuScreens_Campaign.lua.delta",
-      "size": 34553,
-      "crc32": 1771203775
+      "size": 34611,
+      "crc32": 1602501072
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -1994,15 +1994,15 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\MenuScreens\\DebugMenu.lua",
       "delta_file": "deltas/0207_Scripts_MenuScreens_DebugMenu.lua.delta",
-      "size": 68999,
-      "crc32": 3030759179
+      "size": 87654,
+      "crc32": 2468481692
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\MenuScreens\\MainScreen.lua",
       "delta_file": "deltas/0208_Scripts_MenuScreens_MainScreen.lua.delta",
-      "size": 5089,
-      "crc32": 2987702521
+      "size": 5090,
+      "crc32": 761785234
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -2071,29 +2071,29 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\MenuScreens\\Options\\BindWaitForKey.lua",
       "delta_file": "deltas/0218_Scripts_MenuScreens_Options_BindWaitForKey.lua.delta",
-      "size": 3751,
-      "crc32": 3512191919
+      "size": 3757,
+      "crc32": 3782847281
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\MenuScreens\\Options\\Control.lua",
       "delta_file": "deltas/0219_Scripts_MenuScreens_Options_Control.lua.delta",
-      "size": 13572,
-      "crc32": 447888429
+      "size": 13764,
+      "crc32": 4207919959
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\MenuScreens\\Options\\Game.lua",
       "delta_file": "deltas/0220_Scripts_MenuScreens_Options_Game.lua.delta",
-      "size": 8742,
-      "crc32": 3924506096
+      "size": 10093,
+      "crc32": 971328770
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\MenuScreens\\Options\\Sound.lua",
       "delta_file": "deltas/0221_Scripts_MenuScreens_Options_Sound.lua.delta",
       "size": 7339,
-      "crc32": 1242894857
+      "crc32": 1512889866
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -3677,21 +3677,21 @@
       "target": "assets\\ui\\inventory\\gun_case_open.dds",
       "asset_file": "assets/assets/ui/inventory/gun_case_open.dds",
       "size": 4194432,
-      "crc32": 2399385929
+      "crc32": 2040710998
     },
     {
       "op": "COPY_ASSET",
       "target": "assets\\ui\\inventory\\gun_case_open.png",
       "asset_file": "assets/assets/ui/inventory/gun_case_open.png",
-      "size": 1087830,
-      "crc32": 364023947
+      "size": 1462351,
+      "crc32": 1684551659
     },
     {
       "op": "COPY_ASSET",
       "target": "assets\\ui\\inventory\\gun_case_open.tga",
       "asset_file": "assets/assets/ui/inventory/gun_case_open.tga",
       "size": 4194348,
-      "crc32": 2605428368
+      "crc32": 1475697760
     },
     {
       "op": "COPY_ASSET",
@@ -5056,21 +5056,21 @@
       "target": "assets\\ui\\inventory\\icons\\gun_case.dds",
       "asset_file": "assets/assets/ui/inventory/icons/gun_case.dds",
       "size": 131200,
-      "crc32": 513854955
+      "crc32": 2791366236
     },
     {
       "op": "COPY_ASSET",
       "target": "assets\\ui\\inventory\\icons\\gun_case.png",
       "asset_file": "assets/assets/ui/inventory/icons/gun_case.png",
-      "size": 2240,
-      "crc32": 76205951
+      "size": 40648,
+      "crc32": 2838446908
     },
     {
       "op": "COPY_ASSET",
       "target": "assets\\ui\\inventory\\icons\\gun_case.tga",
       "asset_file": "assets/assets/ui/inventory/icons/gun_case.tga",
       "size": 131116,
-      "crc32": 4115543123
+      "crc32": 3088577060
     },
     {
       "op": "COPY_ASSET",
@@ -5084,7 +5084,7 @@
       "target": "assets\\ui\\inventory\\icons\\gun_case_rot180.tga",
       "asset_file": "assets/assets/ui/inventory/icons/gun_case_rot180.tga",
       "size": 131116,
-      "crc32": 2313118096
+      "crc32": 1736972533
     },
     {
       "op": "COPY_ASSET",
@@ -5098,7 +5098,7 @@
       "target": "assets\\ui\\inventory\\icons\\gun_case_rot270.tga",
       "asset_file": "assets/assets/ui/inventory/icons/gun_case_rot270.tga",
       "size": 131116,
-      "crc32": 45454911
+      "crc32": 3318309602
     },
     {
       "op": "COPY_ASSET",
@@ -5112,7 +5112,7 @@
       "target": "assets\\ui\\inventory\\icons\\gun_case_rot90.tga",
       "asset_file": "assets/assets/ui/inventory/icons/gun_case_rot90.tga",
       "size": 131116,
-      "crc32": 996786192
+      "crc32": 3076981049
     },
     {
       "op": "COPY_ASSET",
@@ -7071,15 +7071,15 @@
       "op": "COPY_ASSET",
       "target": "profiles\\game.cfg",
       "asset_file": "assets/profiles/game.cfg",
-      "size": 9659,
-      "crc32": 3866374613
+      "size": 9845,
+      "crc32": 488707456
     },
     {
       "op": "COPY_ASSET",
       "target": "profiles\\system.cfg",
       "asset_file": "assets/profiles/system.cfg",
-      "size": 4767,
-      "crc32": 372426888
+      "size": 4796,
+      "crc32": 3950198745
     },
     {
       "op": "COPY_ASSET",
@@ -7100,7 +7100,7 @@
       "target": "profiles\\player\\default_system.cfg",
       "asset_file": "assets/profiles/player/default_system.cfg",
       "size": 4813,
-      "crc32": 2553426727
+      "crc32": 4278040062
     }
   ]
 }
