@@ -1222,6 +1222,8 @@ static void ConfigureSheeshModSystemCfg(const std::wstring& cfgPath, bool setNat
     SetCfgKeyValue(text, "s_SFXVolume", "1");
     SetCfgKeyValue(text, "s_MusicVolume", "0.6");
     SetCfgKeyValue(text, "cl_infinite_ammo", "0");
+    SetCfgKeyValue(text, "s_DraculaVO", "0");
+    SetCfgKeyValue(text, "cl_debug_f8", "1");
     SetCfgKeyValue(text, "s_CompatibleMode", "0");
     SetCfgKeyValue(text, "s_DopplerEnable", "0");
     // Enforce detail & bump textures so rock/terrain/overworld surfaces never appear smooth/untextured
@@ -1237,6 +1239,7 @@ static void ConfigureSheeshModSystemCfg(const std::wstring& cfgPath, bool setNat
     SetCfgKeyValue(text, "r_TexQuality", "0");
     SetCfgKeyValue(text, "e_obj_view_dist_ratio", "65.000000");
     SetCfgKeyValue(text, "e_obj_lod_ratio", "20.000000");
+    SetCfgKeyValue(text, "ca_LodBias", "0.01");
     SetCfgKeyValue(text, "e_objects_fade_on_distance", "0");
     SetCfgKeyValue(text, "e_cgf_load_lods", "0");
     SetCfgKeyValue(text, "e_vegetation_sprites_distance_ratio", "2.000000");

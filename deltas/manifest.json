@@ -111,7 +111,7 @@
       "target": "FCData\\Scripts.pak",
       "delta_file": "deltas/0016_FCData_Scripts.pak.delta",
       "size": 1360009,
-      "crc32": 3699623238
+      "crc32": 3024736393
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -125,7 +125,7 @@
       "target": "FCData\\zz_patch.pak",
       "delta_file": "deltas/0018_FCData_zz_patch.pak.delta",
       "size": 88907237,
-      "crc32": 2287983076
+      "crc32": 3583183049
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -138,8 +138,8 @@
       "op": "COPY_ASSET",
       "target": "system.cfg",
       "asset_file": "assets/system.cfg",
-      "size": 4813,
-      "crc32": 4278040062
+      "size": 4836,
+      "crc32": 4063316180
     },
     {
       "op": "COPY_ASSET",
@@ -159,8 +159,8 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Bin32\\CryGame.dll",
       "delta_file": "deltas/0021_Bin32_CryGame.dll.delta",
-      "size": 2296320,
-      "crc32": 699987507
+      "size": 2296832,
+      "crc32": 2175816907
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -2085,8 +2085,8 @@
       "op": "DELTA_REF_OBJECTS_PAK",
       "target": "Scripts\\MenuScreens\\Options\\Game.lua",
       "delta_file": "deltas/0220_Scripts_MenuScreens_Options_Game.lua.delta",
-      "size": 10093,
-      "crc32": 971328770
+      "size": 10092,
+      "crc32": 1494046565
     },
     {
       "op": "DELTA_REF_OBJECTS_PAK",
@@ -7078,8 +7078,8 @@
       "op": "COPY_ASSET",
       "target": "profiles\\system.cfg",
       "asset_file": "assets/profiles/system.cfg",
-      "size": 4796,
-      "crc32": 3950198745
+      "size": 4836,
+      "crc32": 2484128542
     },
     {
       "op": "COPY_ASSET",
@@ -7099,8 +7099,8 @@
       "op": "COPY_ASSET",
       "target": "profiles\\player\\default_system.cfg",
       "asset_file": "assets/profiles/player/default_system.cfg",
-      "size": 4813,
-      "crc32": 4278040062
+      "size": 4836,
+      "crc32": 4063316180
     }
   ]
 }

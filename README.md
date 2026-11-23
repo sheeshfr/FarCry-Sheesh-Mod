@@ -25,8 +25,8 @@
 - **True ADS & Better Gunplay:** The majority of weapons now feature true Aim Down Sights (ADS) along with reworked recoil, hipfire weapon & flashlight sway, and accuracy.
 - **New Field Gear & Armory Case:** Patch yourself up with field bandages, slot in armor plates, pull out Jack's flip phone on the go (even while driving), organize primary weapons (including the Falcon .357 pistol) inside a weathered 10-weapon tactical Armory Case, and use the dedicated permanent Machete slot with instant middle-mouse quick-knife (`2.45m`).
 - **Pet the Boars:** Walk up to friendly island boars and give them a proper pet.
-- **Tuned Audio & Dialogue Mix:** Story and character dialogue is boosted `+25%` locally (`FCData/zz_sheesh_voices.pak`), Master Volume starts at `100%`, and a tabbed F8 Debug Menu can be toggled in Game Options.
-- **Runs Smooth on Modern PCs:** Uses a pre-configured Vulkan wrapper (`DXVK`) and 4GB memory patch so textures, lighting, and shaders actually work the way they're supposed to on modern graphics cards.
+- **Tuned Audio & Dialogue Mix:** Story and character dialogue is boosted `+25%` locally (`FCData/zz_sheesh_voices.pak`), Master Volume starts at `100%`, Dracula Flow audio defaults to off (`s_DraculaVO = 0`), infinite ammo defaults to off, and the tabbed F8 Debug Menu defaults to enabled (`cl_debug_f8 = 1`).
+- **Runs Smooth on Modern PCs:** Uses a pre-configured Vulkan wrapper (`DXVK`), 4GB memory patch, and tuned character LOD bias (`ca_LodBias = 0.01`) so textures, lighting, shaders, and character bullet-hole decals work properly at modern combat distances.
 - **Works on Every Version:** Runs out of the box on **GOG**, **Steam**, **Epic Games**, and **Ubisoft Connect** copies of Far Cry.
 
 ---
@@ -37,8 +37,8 @@
 - Diegetic weathered tactical hardcase graphics with egg-crate lid foam and 10 gun cutouts (Machete moved exclusively to its permanent slot).
 - Falcon .357 pistol can now be equipped in Primary Weapon Slots 1 & 2 and is blocked from the Machete slot.
 - Reduced quick-knife / Machete melee reach by 30% (`3.5m` -> `2.45m`).
-- Default Master Volume raised to `100%`, infinite ammo cheat off and non-persistent by default, Dracula Flow clips scaled to `70%`, and story/character comms dialogue locally boosted `+25%`.
-- Tabbed F8 Debug Menu with an in-menu Game Options toggle and hipfire weapon/flashlight sway.
+- Default Master Volume raised to `100%`, infinite ammo cheat off and non-persistent by default, Dracula Flow clips scaled to `70%` and off by default, Debug Menu enabled by default (`cl_debug_f8 = 1`), and story/character comms dialogue locally boosted `+25%`.
+- Tabbed F8 Debug Menu with an in-menu Game Options toggle, hipfire weapon/flashlight sway, tuned `ca_LodBias = 0.01` so character bullet-hole decals reliably render at combat range, and cross-level ladder/water zero-gravity & sprint stability fixes.
 
 ---
 
